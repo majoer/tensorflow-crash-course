@@ -21,7 +21,7 @@ california_housing_dataframe = california_housing_dataframe.reindex(
 )
 california_housing_dataframe["median_house_value"] /= 1000.0
 label = "median_house_value"
-targets = california_housing_dataframe[label]
+targets = california_housing_dataframe[label].astype('float32')
 
 
 def input_fn(features, targets, batch_size=1, shuffle=True, num_epochs=None):
@@ -38,12 +38,14 @@ def input_fn(features, targets, batch_size=1, shuffle=True, num_epochs=None):
     return features, labels
 
 
-def train_model(learning_rate, steps, batch_size, input_feature="total_rooms"):
+def train_model(learning_rate, steps, batch_size, input_feature="population"):
+
+    print(california_housing_dataframe.head())
 
     periods = 10
     stepsInPeriod = steps / periods
 
-    feature_data = california_housing_dataframe[[input_feature]]
+    feature_data = california_housing_dataframe[[input_feature]].astype('float32')
     feature_columns = [tf.feature_column.numeric_column(input_feature)]
 
     def train_input_fn(): return input_fn(feature_data, targets, batch_size=batch_size)
@@ -59,7 +61,7 @@ def train_model(learning_rate, steps, batch_size, input_feature="total_rooms"):
     )
 
     plt.figure(figsize=(15, 6))
-    plt.subplot(1, 2, 1)
+    plt.subplot(2, 2, 1)
     plt.title("Learned Line by Period")
     plt.ylabel(label)
     plt.xlabel(input_feature)
@@ -93,22 +95,16 @@ def train_model(learning_rate, steps, batch_size, input_feature="total_rooms"):
         y_extents = weight * x_extents + bias
         plt.plot(x_extents, y_extents, color=colors[period])
 
-    plt.subplot(1, 2, 2)
+    plt.subplot(2, 2, 2)
     plt.ylabel('RMSE')
     plt.xlabel('Periods')
     plt.title("Root Mean Squared Error vs. Periods")
     plt.tight_layout()
     plt.plot(root_mean_squared_errors)
-    plt.show()
 
     calibration_data = pd.DataFrame()
     calibration_data["predictions"] = pd.Series(predictions)
     calibration_data["targets"] = pd.Series(targets)
     display.display(calibration_data.describe())
 
-
-train_model(
-    learning_rate=0.00002,
-    steps=500,
-    batch_size=5
-)
+    return calibration_data
